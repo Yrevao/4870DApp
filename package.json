@@ -1,0 +1,17 @@
+{
+    "name": "asset-transfer-dapp",
+    "version": "0.0.1",
+    "description": "demo for transferring assets using the blockchain",
+    "author": "Avery",
+    "license": "ISC",
+    "scripts": {
+        "start": "node ./app/app.js"
+    },
+    "dependencies": {
+        "@truffle/hdwallet-provider": "^1.7.0",
+        "dotenv": "^16.3.1",
+        "express": "^4.18.2",
+        "mongoose": "^8.0.2",
+        "sprightly": "^2.0.1"
+    }
+}
