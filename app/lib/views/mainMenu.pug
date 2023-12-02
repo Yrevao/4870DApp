@@ -1,0 +1,11 @@
+doctype html
+
+html
+    head
+        title Demo Website Index
+        script(src='/mainMenu.js')
+    body
+        ul
+            each site, i in sites
+                li 
+                    button( onclick = `document.location = '/sites/${i}'`) #{site.name}

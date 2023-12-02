@@ -1,9 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const render = require ('./render.js');
+const c_site = require('./controllers/c_site.js');
 
-router.get('/', (req, res) => {
-    res.send(render.mainMenu());
-});
+router.post('/', c_site.generateSites);
 
 module.exports = router;
