@@ -6,6 +6,6 @@ html
         script(src='/mainMenu.js')
     body
         ul
-            each site, i in sites
+            each site in sites
                 li 
-                    button( onclick = `document.location = '/sites/${i}'`) #{site.name}
+                    button( onclick = `window.open(window.location.origin+'/sites/?id=${site._id.toString()}')`) #{site.name}

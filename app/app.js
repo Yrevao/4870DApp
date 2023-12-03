@@ -2,9 +2,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 require('dotenv').config();
 const routes = require('./lib/routes');
-const options = require('./options');
+const settings = require('./settings');
 
-if(options.enableMongo) {
+if(settings.enableMongo) {
     mongoose.connect(process.env.MONGOURI).
         then(() => console.log("mongoDB connected")).
         catch(error => {
@@ -15,4 +15,4 @@ if(options.enableMongo) {
 const app = express();
 app.use('/', routes);
 app.use(express.static('./app/public'));
-app.listen(options.port);
+app.listen(settings.port);
