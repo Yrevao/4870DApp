@@ -14,11 +14,11 @@ contract AssetTransfer {
     address private admin;
 
     modifier onlyAdmin() {
-        require(msg.sender == admin);
+        require(msg.sender == admin, "Access Denied");
         _;
     }
     modifier isRegistered() {
-        require(registeredClients[msg.sender] == true);
+        require(registeredClients[msg.sender] == true, "Client must be registered");
         _;
     }
 
@@ -41,32 +41,28 @@ contract AssetTransfer {
     }
     // the receiving client will start the transfer
     function startTransfer(bytes memory assetInfo, uint assetCost, bytes memory transferAddress) public isRegistered {
-        require(!activeTransfers[transferAddress].active);
-        
+        require(!activeTransfers[transferAddress].active, "Transfer already active");
+
         activeTransfers[transferAddress] = transferInfo(assetCost, assetInfo, false, true);
     }
     // once the transfer has been started the sending client can send the payment for the asset and information about the asset
-    function sendTransfer(bytes memory assetInfo, bytes memory transferAddress) public payable isRegistered returns (bool) {
+    function sendTransfer(bytes memory assetInfo, bytes memory transferAddress) public payable isRegistered {
         transferInfo memory transfer = activeTransfers[transferAddress];
 
         require(transfer.assetCost == msg.value &&
                 compareBytes(transfer.assetInfo, assetInfo) &&
-                transfer.complete == false);
+                transfer.complete == false, "Transfer does not exist");
 
         transfer.complete = true;
         activeTransfers[transferAddress] = transfer;
-
-        return true;
     }
     // if the correct asset and payment were sent by the sending client then the transfer can be closed by the receiving client
-    function confirmTransfer(bytes memory transferAddress) public payable isRegistered returns (bool) {
+    function confirmTransfer(bytes memory transferAddress) public payable isRegistered {
         transferInfo memory transfer = activeTransfers[transferAddress];
 
-        require(transfer.complete == true);
+        require(transfer.complete == true, "Transfer must be complete to confirm");
 
         payable(msg.sender).transfer(transfer.assetCost);
         delete activeTransfers[transferAddress];
-
-        return true;
     }
 }
