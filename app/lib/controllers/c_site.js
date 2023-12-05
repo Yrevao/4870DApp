@@ -18,5 +18,8 @@ module.exports = {
         const site = await s_site.findById(req.query.id);
 
         res.send(render.site( {site: site }));
+    },
+    glue: async (req, res) => {
+        
     }
 }

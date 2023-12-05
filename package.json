@@ -5,7 +5,8 @@
     "author": "Avery",
     "license": "ISC",
     "scripts": {
-        "start": "node ./app/app.js"
+        "start": "node ./app/app.js",
+        "register": "node ./app/registerClients.js"
     },
     "dependencies": {
         "@truffle/hdwallet-provider": "^1.7.0",
