@@ -178,7 +178,7 @@ const updateQuery = () => {
 }
 
 // get sites from the url query string or set default sites
-const init = () => {
+window.onload = () => {
     if(url.searchParams.toString() != '') {
         // set sites from query string
         sites = JSON.parse(url.searchParams.get('sites'));
@@ -216,6 +216,6 @@ const init = () => {
 
     updateSiteDetails();
     updateAssetDetails();
+    
+    updateQuery();
 }
-init();
-updateQuery();

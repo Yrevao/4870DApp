@@ -1,0 +1,24 @@
+doctype html
+
+html
+    head
+        link(rel='stylesheet' type='text/css' href='/style.css')
+        title #{site.name}
+        script(src='/siteGlue.js')
+    body
+        div
+            button(id='enable') Enable Wallet
+        div
+            | Choose an Asset:
+            select(id='assets')
+                each asset in site.assets
+                    option(value = asset.price) Name: #{asset.name} Price: #{asset.price}
+        div
+            | Address:
+            textarea(id='address', cols='50', rows='1')
+        div
+            | Action:
+            button(id='register') Register
+            button(id='receive') Receive
+            button(id='send') Send
+            button(id='confirm') Confirm
