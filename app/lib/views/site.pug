@@ -3,20 +3,26 @@ doctype html
 html
     head
         link(rel='stylesheet' type='text/css' href='/style.css')
-        title #{site.name}
+        title #{siteName}
     body
-        div
-            | Choose an Asset:
-            select(id='assets')
-                each asset in site.assets
-                    option(value = `{"name":"${asset.name}", "price": ${asset.price}}`) Name: #{asset.name} Price: #{asset.price} Owned: #{asset.owned}
-        div
+        div(class='menus')
+            div(class='menu-set')
+                | Owned Assets
+                div(class='menu-container')
+                    each asset, i in owned
+                        button(class='menu-button owned-button' onclick=`toggleButtons('owned', ${i}, ${asset})`)=asset.name
+                button(id='send' class='action-button') Send
+
+            div(class='menu-set')
+                | Available Assets
+                div(class='menu-container')
+                    each asset, i in available
+                        button(class='menu-button available-button' onclick=`toggleButtons('available', ${i}, ${asset})`)=asset.name
+                button(id='receive' class='action-button') Receive
+            
+        div(class='address-box')
             | Address:
             textarea(id='address', cols='100', rows='1')=addr
-        div
-            | Action:
-            button(id='receive') Receive
-            button(id='send') Send
-            button(id='confirm') Confirm
+            button(id='confirm' class='confirm-button') Confirm
     
     script(src='/site.js')

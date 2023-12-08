@@ -20,12 +20,27 @@ module.exports = {
     // render a single site in html based on the site object from mongo
     renderSite: async (req, res) => {
         const site = await s_site.findById(req.query.id);
-        const transfer = await s_transfer.findOne({ receiverId: req.query.id });
+        const transfer = await s_transfer.findOne({ receiverId: req.query.id }, {}, {sort: { '_id': 'descending' }}); // always get the latest transfer
 
-        if(transfer)
-            res.send(render.site({ site: site, addr: transfer.transferAddress }));
-        else
-            res.send(render.site({ site: site, addr: '' }));
+        // remove _id property from assets to avoid "ObjectId is not defined" on the client side
+        site.assets.forEach((asset) => {
+            asset._id = null;
+        });
+
+        // prepare locals properties
+        const addr = transfer ? transfer.transferAddress : '';
+        owned = site.assets.filter((asset) => asset.owned);
+        available = site.assets.filter((asset) => !asset.owned);
+
+        // generate locals object
+        const locals = {
+            siteName: site.name,
+            addr: addr,
+            owned: owned,
+            available: available
+        }
+
+        res.send(render.site(locals));
     },
     // send client updated html after preforming smart contract operations
     updateSite: async(req, res) => {

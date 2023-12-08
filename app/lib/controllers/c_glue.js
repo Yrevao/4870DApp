@@ -88,7 +88,7 @@ module.exports = {
     // request site details from mongo
     const site = await s_site.findById(callingId);
 
-    // verify asset do nothing if asset dosen't exist
+    // verify asset do nothing if asset dosen't exist / is already owned
     const assetIndex = site.assets.findIndex((anAsset) => (
       anAsset.owned == false &&
       anAsset.name == assetName &&
@@ -96,6 +96,7 @@ module.exports = {
     ));
     if(assetIndex < 0)
       return false;
+    const asset = site.assets[assetIndex];
 
     // generate random transfer address
     const transferAddress = web3.utils.randomHex(32);
