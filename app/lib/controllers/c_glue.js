@@ -71,15 +71,43 @@ const contractABI = [
   }
 ];
 const contract = new web3.eth.Contract(contractABI, process.env.CONTRACTADDRESS);
-const gasLimit = 200000;
+
+// sign transaction then send
+const sendSignedTransaction = async (data, from, value) => {
+  // build transaction object
+  const rawTx =
+  {
+    from: from,
+    to: process.env.CONTRACTADDRESS,
+    gas: 4000000,
+    gasPrice: 10000000000,
+    value: value,
+    data: data
+  };
+
+  // get private keys dict
+  const privateKeys = JSON.parse(process.env.ADDRESSTOPRIVATEKEY);
+  // convert private key to bytes
+  const bytesPrivateKey = Buffer.from(privateKeys[`${from}`], 'hex');
+
+  // sign transaction then send transaction
+  web3.eth.accounts.signTransaction(rawTx, bytesPrivateKey).then((signedTx) => {    
+    web3.eth.sendSignedTransaction(signedTx.rawTransaction).then((receipt) => {
+      if(!receipt.status)
+        throw "Transaction Call Reverted"
+    });
+  });
+}
 
 module.exports = {
   register: async (address) => {
-    const accounts = await web3.eth.getAccounts();
-
-    const clientAddress = web3.utils.toChecksumAddress(address);
+    const client = web3.utils.toChecksumAddress(address);
     
-    await contract.methods.registerClient(clientAddress).send({from: accounts[0], gas: gasLimit});
+    await sendSignedTransaction(
+      contract.methods.registerClient(client).encodeABI(),
+      process.env.ADMIN,
+      0
+    );
   },
   receive: async (args) => {
     // split up the args object
@@ -102,9 +130,11 @@ module.exports = {
     // generate random transfer address
     const transferAddress = web3.utils.randomHex(32);
 
-    // format arguments
-    const clientAddress = web3.utils.toChecksumAddress(site.address);
-    await contract.methods.startTransfer(web3.utils.toWei(assetPrice, "ether"), transferAddress).send({from: clientAddress, gas: gasLimit});
+    await sendSignedTransaction(
+      contract.methods.startTransfer(assetPrice, transferAddress).encodeABI(),
+      site.address,
+      0
+    );
 
     // add asset to s_transfer
     await s_transfer.insertMany([{
@@ -143,12 +173,13 @@ module.exports = {
     // remove ownership from asset in site object
     site.assets[assetIndex].owned = false;
     let asset = site.assets[assetIndex];
-
-    // format arguments
-    const clientAddress = web3.utils.toChecksumAddress(site.address);
     
     // contract call
-    await contract.methods.sendTransfer(transferAddress).send({from: clientAddress, value: web3.utils.toWei(asset.price, 'ether'), gas: gasLimit});
+    await sendSignedTransaction(
+      contract.methods.sendTransfer(transferAddress).encodeABI(),
+      site.address, 
+      asset.price
+    );
 
     // update mongo with assets
     await s_site.findByIdAndUpdate(callingId, site);
@@ -161,11 +192,12 @@ module.exports = {
     // request site details from mongo
     const site = await s_site.findById(callingId);
 
-    // format arguments
-    const clientAddress = web3.utils.toChecksumAddress(site.address);
-
     // contract call
-    await contract.methods.confirmTransfer(transferAddress).send({from: clientAddress, gas: gasLimit});
+    await sendSignedTransaction(
+      contract.methods.confirmTransfer(transferAddress).encodeABI(),
+      site.address,
+      0
+    );
 
     // verify transfer
     const transfer = await s_transfer.findOne({ transferAddress: transferAddress });

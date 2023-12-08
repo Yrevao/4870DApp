@@ -204,8 +204,8 @@ window.onload = () => {
         siteA.name = 'Site A';
         siteB.name = 'Site B';
 
-        siteA.address = '0x2aDd3E283aC08E931C4AD35A3bdd36D799FF8574';
-        siteB.address = '0x305273C1c3e79b01E861F143a5dC6Aab97AA7596';
+        siteA.address = '0x1116981fFaCBA6a4BAEA7784d6C7A982C063f80B';
+        siteB.address = '0xE9dd5064679fb8A960B43F2B9a3E6b14F8BB7764';
 
         // setup default assets
         assetA = assetFactory();
