@@ -30,12 +30,11 @@ contract('AssetTransfer', (accounts) => {
             );
         });
         it('isRegistered modifier should only let registered clients perform transfer operations', async () => {
-            const assetInfo = web3.utils.utf8ToHex("test_asset");
             const assetCost = 5;
-            const transferAddress = web3.utils.utf8ToHex("1234");
+            const transferAddress = "1234";
 
             await truffleAssert.reverts(
-                AssetTransferTest.startTransfer(assetInfo, assetCost, transferAddress, { from: accounts[4] }),
+                AssetTransferTest.startTransfer(assetCost, transferAddress, { from: accounts[4] }),
                 truffleAssert.ErrorType.REVERT,
                 codes.isRegisteredError,
                 codes.isRegisteredError
@@ -50,20 +49,18 @@ contract('AssetTransfer', (accounts) => {
         });
 
         it('Start transfer', async () => {
-            const assetInfo = web3.utils.utf8ToHex("test_asset");
             const assetCost = 5;
-            const transferAddress = web3.utils.utf8ToHex("1234");
+            const transferAddress = "1234";
 
-            await AssetTransferTest.startTransfer(assetInfo, assetCost, transferAddress, { from: accounts[2] });
+            await AssetTransferTest.startTransfer(assetCost, transferAddress, { from: accounts[2] });
         });
 
         it('Start duplicate transfer', async () => {
-            const assetInfo = web3.utils.utf8ToHex("test_asset");
             const assetCost = 5;
-            const transferAddress = web3.utils.utf8ToHex("1234");
+            const transferAddress = "1234";
 
             await truffleAssert.reverts(
-                AssetTransferTest.startTransfer(assetInfo, assetCost, transferAddress, { from: accounts[2] }),
+                AssetTransferTest.startTransfer(assetCost, transferAddress, { from: accounts[2] }),
                 truffleAssert.ErrorType.REVERT,
                 codes.startTransferError,
                 codes.startTransferError
@@ -71,11 +68,10 @@ contract('AssetTransfer', (accounts) => {
         })
 
         it('Send invalid transfer', async () => {
-            const assetInfo = web3.utils.utf8ToHex("test_asset_2");
-            const transferAddress = web3.utils.utf8ToHex("12345");
+            const transferAddress = "12345";
 
             await truffleAssert.reverts(
-                AssetTransferTest.sendTransfer(assetInfo, transferAddress, { from: accounts[1], value: 4 }),
+                AssetTransferTest.sendTransfer(transferAddress, { from: accounts[1], value: 4 }),
                 truffleAssert.ErrorType.REVERT,
                 codes.sendTransferError,
                 codes.sendTransferError
@@ -83,7 +79,7 @@ contract('AssetTransfer', (accounts) => {
         });
 
         it('Confirm transfer early', async () => {
-            const transferAddress = web3.utils.utf8ToHex("1234");
+            const transferAddress = "1234";
 
             await truffleAssert.reverts(
                 AssetTransferTest.confirmTransfer(transferAddress, { from: accounts[2] }),
@@ -94,14 +90,13 @@ contract('AssetTransfer', (accounts) => {
         })
 
         it('Send transfer', async () => {
-            const assetInfo = web3.utils.utf8ToHex("test_asset");
-            const transferAddress = web3.utils.utf8ToHex("1234");
+            const transferAddress = "1234";
 
-            await AssetTransferTest.sendTransfer(assetInfo, transferAddress, { from: accounts[1], value: 5 });
+            await AssetTransferTest.sendTransfer(transferAddress, { from: accounts[1], value: 5 });
         });
 
         it('Confirm transfer', async () => {
-            const transferAddress = web3.utils.utf8ToHex("1234");
+            const transferAddress = "1234";
 
             await AssetTransferTest.confirmTransfer(transferAddress, { from: accounts[2] });
         });

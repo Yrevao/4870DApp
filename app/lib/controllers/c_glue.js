@@ -6,80 +6,68 @@ const s_transfer = require('../schemas/s_transfer');
 
 const web3 = new Web3(process.env.PROVIDER);
 const contractABI = [
-    {
-      "inputs": [],
-      "stateMutability": "nonpayable",
-      "type": "constructor"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "client",
-          "type": "address"
-        }
-      ],
-      "name": "registerClient",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes",
-          "name": "assetInfo",
-          "type": "bytes"
-        },
-        {
-          "internalType": "uint256",
-          "name": "assetCost",
-          "type": "uint256"
-        },
-        {
-          "internalType": "bytes",
-          "name": "transferAddress",
-          "type": "bytes"
-        }
-      ],
-      "name": "startTransfer",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes",
-          "name": "assetInfo",
-          "type": "bytes"
-        },
-        {
-          "internalType": "bytes",
-          "name": "transferAddress",
-          "type": "bytes"
-        }
-      ],
-      "name": "sendTransfer",
-      "outputs": [],
-      "stateMutability": "payable",
-      "type": "function",
-      "payable": true
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes",
-          "name": "transferAddress",
-          "type": "bytes"
-        }
-      ],
-      "name": "confirmTransfer",
-      "outputs": [],
-      "stateMutability": "payable",
-      "type": "function",
-      "payable": true
-    }
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "client",
+        "type": "address"
+      }
+    ],
+    "name": "registerClient",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "assetCost",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "transferAddress",
+        "type": "string"
+      }
+    ],
+    "name": "startTransfer",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "transferAddress",
+        "type": "string"
+      }
+    ],
+    "name": "sendTransfer",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "transferAddress",
+        "type": "string"
+      }
+    ],
+    "name": "confirmTransfer",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  }
 ];
 const contract = new web3.eth.Contract(contractABI, process.env.CONTRACTADDRESS);
 
@@ -91,70 +79,110 @@ module.exports = {
     
     await contract.methods.registerClient(clientAddress).send({from: accounts[0]});
   },
-  receive: async (assetName, assetPrice, callingId) => {
+  receive: async (args) => {
+    // split up the args object
+    const assetName = args.assetName;
+    const assetPrice = args.assetPrice;
+    const callingId = args.callingId;
+  
     // request site details from mongo
     const site = await s_site.findById(callingId);
-    // generate transfer address from the asset name and price
-    const transferAddress = crypto.createHash('sha1').update(assetName + assetPrice).digest('hex');
 
-    // format arguments
-    const hexAsset = web3.utils.utf8ToHex(assetName);
-    const hexTransferAddress = web3.utils.utf8ToHex(transferAddress);
-    const clientAddress = web3.utils.toChecksumAddress(site.address);
-
-    await contract.methods.startTransfer(hexAsset, assetPrice, hexTransferAddress).send({from: clientAddress});
-
-    return transferAddress;
-  },
-  send: async (assetName, transferAddress, callingId) => {
-    // request site details from s_site
-    let site = await s_site.findById(callingId);
-    // delete asset from site object
-    let asset;
-    site.assets.forEach((anAsset, i) => {
-      if(anAsset.name == assetName) {
-        asset = anAsset;
-        delete site.assets[i];
-        return true;
-      }
+    // verify asset do nothing if asset dosen't exist
+    const assetIndex = site.assets.findIndex((anAsset) => (
+      anAsset.owned == false &&
+      anAsset.name == assetName &&
+      anAsset.price == assetPrice
+    ));
+    if(assetIndex < 0)
       return false;
-    });
+
+    // generate random transfer address
+    const transferAddress = web3.utils.randomHex(32);
 
     // format arguments
-    const hexAsset = web3.utils.utf8ToHex(asset.name);
-    const hexTransferAddress = web3.utils.utf8ToHex(transferAddress);
+    const clientAddress = web3.utils.toChecksumAddress(site.address);
+    await contract.methods.startTransfer(web3.utils.toWei(assetPrice, "ether"), transferAddress).send({from: clientAddress});
+
+    // add asset to s_transfer
+    await s_transfer.insertMany([{
+      receiverId: callingId,
+      transferAddress: transferAddress,
+      name: assetName,
+      price: assetPrice
+    }]);
+  },
+  send: async (args) => {
+    // split up the args object
+    const assetName = args.assetName;
+    const assetPrice = args.assetPrice;
+    const transferAddress = args.transferAddress;
+    const callingId = args.callingId;
+
+    // request transfer/site details from mongo
+    let site = await s_site.findById(callingId);
+    const transfer = await s_transfer.findOne({transferAddress: transferAddress});
+    
+    // verify transfer
+    if(transfer.name != assetName || transfer.price != assetPrice)
+      return false;
+
+    // find asset in site object
+    const assetIndex = site.assets.findIndex((anAsset, i) => (
+      anAsset.owned == true && 
+      anAsset.name == assetName && 
+      anAsset.price == assetPrice
+    ));
+
+    // don't do anything if the asset isn't owned/found
+    if(assetIndex < 0)
+      return false;
+
+    // remove ownership from asset in site object
+    site.assets[assetIndex].owned = false;
+    let asset = site.assets[assetIndex];
+
+    // format arguments
     const clientAddress = web3.utils.toChecksumAddress(site.address);
     
     // contract call
-    await contract.methods.sendTransfer(hexAsset, hexTransferAddress).send({from: clientAddress, value: asset.price});
+    await contract.methods.sendTransfer(transferAddress).send({from: clientAddress, value: web3.utils.toWei(asset.price, 'ether')});
 
-    // update s_site with new assets list
-    await s_site.findOneAndReplace({ _id: new ObjectId(callingId) }, site);
-    // add asset to s_transfer
-    await s_transfer.insertMany([{
-      transferAddress: transferAddress,
-      name: asset.name,
-      price: asset.price
-    }]);
+    // update mongo with assets
+    await s_site.findByIdAndUpdate(callingId, site);
   },
-  confirm: async (transferAddress, callingId) => {
+  confirm: async (args) => {
+    // split up the args object
+    const transferAddress = args.transferAddress;
+    const callingId = args.callingId;
+
     // request site details from mongo
     const site = await s_site.findById(callingId);
-    const transfer = await s_transfer.findOne({ transferAddress: transferAddress });
 
     // format arguments
-    const hexTransferAddress = web3.utils.utf8ToHex(transferAddress);
     const clientAddress = web3.utils.toChecksumAddress(site.address);
 
     // contract call
-    await contract.methods.confirmTransfer(hexTransferAddress).send({from: clientAddress});
+    await contract.methods.confirmTransfer(transferAddress).send({from: clientAddress});
 
-    // add asset to site object
-    site.assets.push({
-      name: transfer.name,
-      price: transfer.price
-    });
+    // verify transfer
+    const transfer = await s_transfer.findOne({ transferAddress: transferAddress });
+    if(transfer.receiverId != callingId)
+      return false;
+
+    // own asset in site object
+    const assetIndex = site.assets.findIndex((anAsset) => (
+      anAsset.owned == false &&
+      anAsset.name == transfer.name && 
+      anAsset.price == transfer.price
+    ));
+    // don't do anything if asset isn't found
+    if(assetIndex < 0)
+      return false;
+
+    site.assets[assetIndex].owned = true;
+
     // update s_site with new assets list
-    await s_site.findOneAndReplace({ _id: new ObjectId(callingId) }, site);
+    await s_site.findByIdAndUpdate(callingId, site);
   }
 }

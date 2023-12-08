@@ -2,6 +2,7 @@ const sitesDD = document.getElementById('sites');
 const assetsDD = document.getElementById('assets');
 const addSiteButton = document.getElementById('addSite');
 const addAssetButton = document.getElementById('addAsset');
+const ownedCheckbox = document.getElementById('owned');
 const siteNameTextarea = document.getElementById('siteName');
 const siteAddressTextarea = document.getElementById('siteAddress');
 const assetNameTextarea = document.getElementById('assetName');
@@ -14,7 +15,8 @@ let sites = [];
 const assetFactory = () => {
     newAsset = {
         name: '',
-        price: -1
+        price: -1,
+        owned: false
     }
 
     return newAsset;
@@ -39,6 +41,14 @@ addAssetButton.onclick = () => {
     updateAssetsDD(assetsDD.selectedIndex);
     assetsDD.selectedIndex = assetsDD.options.length - 1;
     updateAssetDetails();
+}
+
+ownedCheckbox.onchange = () => {
+    sites[ sitesDD.selectedIndex ].assets[ assetsDD.selectedIndex ].owned = ownedCheckbox.checked;
+
+    updateAssetsDD(assetsDD.selectedIndex);
+
+    updateQuery();
 }
 
 addSiteButton.onclick = () => {
@@ -114,6 +124,7 @@ const updateAssetDetails = () => {
     // update site details based on object
     assetNameTextarea.value = curAsset.name;
     assetPriceTextarea.value = curAsset.price;
+    ownedCheckbox.checked = curAsset.owned;
 }
 
 // set the site details to the current site selection
@@ -138,10 +149,12 @@ const updateAssetsDD = (currentSelection) => {
 
     // populate assets dropdown with assets from current site
     curSite.assets.forEach((asset, i) => {
-        assetOpt = document.createElement('option');
+        let assetOpt = document.createElement('option');
 
         assetOpt.value = i;
-        assetOpt.text = asset.name == '' ? 'Untitled Asset' : asset.name;
+
+        const assetNameText = asset.name == '' ? 'Untitled Asset' : asset.name;
+        assetOpt.text = `${assetNameText} [Owned: ${asset.owned}]`;
 
         assetsDD.appendChild(assetOpt);
     });
@@ -191,8 +204,8 @@ window.onload = () => {
         siteA.name = 'Site A';
         siteB.name = 'Site B';
 
-        siteA.address = '0x31c362e6Ff9e46140c554F897d2a78AA8684BF6A';
-        siteB.address = '0x5429E2a6d3aD038C7771628e07063Cc42aC17cE5';
+        siteA.address = '0x64a23Bae9B7B06F29f1Abfb3A63e6ecfbB216e80';
+        siteB.address = '0x914a9D185899ABB4ce93B6541FB28BAb55cb0Bf7';
 
         // setup default assets
         assetA = assetFactory();
