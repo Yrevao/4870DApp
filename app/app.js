@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 const routes = require('./lib/routes');
 const settings = require('./settings');
-const crypto = require('crypto');
 
 if(settings.enableMongo) {
     mongoose.connect(process.env.MONGOURI).

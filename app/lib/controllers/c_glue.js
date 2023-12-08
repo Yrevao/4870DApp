@@ -1,5 +1,4 @@
 require('dotenv').config();
-const crypto = require('crypto');
 const { Web3 } = require('web3');
 const s_site = require('../schemas/s_site');
 const s_transfer = require('../schemas/s_transfer');
@@ -53,7 +52,8 @@ const contractABI = [
     "name": "sendTransfer",
     "outputs": [],
     "stateMutability": "payable",
-    "type": "function"
+    "type": "function",
+    "payable": true
   },
   {
     "inputs": [
@@ -66,10 +66,12 @@ const contractABI = [
     "name": "confirmTransfer",
     "outputs": [],
     "stateMutability": "payable",
-    "type": "function"
+    "type": "function",
+    "payable": true
   }
 ];
 const contract = new web3.eth.Contract(contractABI, process.env.CONTRACTADDRESS);
+const gasLimit = 200000;
 
 module.exports = {
   register: async (address) => {
@@ -77,7 +79,7 @@ module.exports = {
 
     const clientAddress = web3.utils.toChecksumAddress(address);
     
-    await contract.methods.registerClient(clientAddress).send({from: accounts[0]});
+    await contract.methods.registerClient(clientAddress).send({from: accounts[0], gas: gasLimit});
   },
   receive: async (args) => {
     // split up the args object
@@ -96,14 +98,13 @@ module.exports = {
     ));
     if(assetIndex < 0)
       return false;
-    const asset = site.assets[assetIndex];
 
     // generate random transfer address
     const transferAddress = web3.utils.randomHex(32);
 
     // format arguments
     const clientAddress = web3.utils.toChecksumAddress(site.address);
-    await contract.methods.startTransfer(web3.utils.toWei(assetPrice, "ether"), transferAddress).send({from: clientAddress});
+    await contract.methods.startTransfer(web3.utils.toWei(assetPrice, "ether"), transferAddress).send({from: clientAddress, gas: gasLimit});
 
     // add asset to s_transfer
     await s_transfer.insertMany([{
@@ -147,7 +148,7 @@ module.exports = {
     const clientAddress = web3.utils.toChecksumAddress(site.address);
     
     // contract call
-    await contract.methods.sendTransfer(transferAddress).send({from: clientAddress, value: web3.utils.toWei(asset.price, 'ether')});
+    await contract.methods.sendTransfer(transferAddress).send({from: clientAddress, value: web3.utils.toWei(asset.price, 'ether'), gas: gasLimit});
 
     // update mongo with assets
     await s_site.findByIdAndUpdate(callingId, site);
@@ -164,7 +165,7 @@ module.exports = {
     const clientAddress = web3.utils.toChecksumAddress(site.address);
 
     // contract call
-    await contract.methods.confirmTransfer(transferAddress).send({from: clientAddress});
+    await contract.methods.confirmTransfer(transferAddress).send({from: clientAddress, gas: gasLimit});
 
     // verify transfer
     const transfer = await s_transfer.findOne({ transferAddress: transferAddress });

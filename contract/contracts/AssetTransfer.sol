@@ -4,6 +4,7 @@ pragma solidity >=0.4.22 <0.9.0;
 
 contract AssetTransfer {
     struct transferInfo {
+        address receiverAddr;
         uint assetCost;
         bool complete;
         bool active;
@@ -31,14 +32,14 @@ contract AssetTransfer {
     function startTransfer(uint assetCost, string memory transferAddress) public isRegistered {
         require(!activeTransfers[transferAddress].active, "Transfer already active");
 
-        activeTransfers[transferAddress] = transferInfo(assetCost, false, true);
+        activeTransfers[transferAddress] = transferInfo(msg.sender, assetCost, false, true);
     }
     // once the transfer has been started the sending client can send the payment for the asset and information about the asset
     function sendTransfer(string memory transferAddress) public payable isRegistered {
         transferInfo memory transfer = activeTransfers[transferAddress];
 
         require(transfer.assetCost == msg.value &&
-                transfer.complete == false, "Transfer does not exist");
+                transfer.complete == false, "Asset send failed");
 
         transfer.complete = true;
         activeTransfers[transferAddress] = transfer;
@@ -47,7 +48,7 @@ contract AssetTransfer {
     function confirmTransfer(string memory transferAddress) public payable isRegistered {
         transferInfo memory transfer = activeTransfers[transferAddress];
 
-        require(transfer.complete == true, "Transfer must be complete to confirm");
+        require(transfer.receiverAddr == msg.sender && transfer.complete == true, "Transfer confirmation failed");
 
         payable(msg.sender).transfer(transfer.assetCost);
         delete activeTransfers[transferAddress];
