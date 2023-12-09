@@ -201,8 +201,8 @@ window.onload = () => {
         siteA = siteFactory();
         siteB = siteFactory();
 
-        siteA.name = 'Site A';
-        siteB.name = 'Site B';
+        siteA.name = 'Steam';
+        siteB.name = 'Not Steam';
 
         siteA.address = '0x1116981fFaCBA6a4BAEA7784d6C7A982C063f80B';
         siteB.address = '0xE9dd5064679fb8A960B43F2B9a3E6b14F8BB7764';
@@ -210,15 +210,21 @@ window.onload = () => {
         // setup default assets
         assetA = assetFactory();
         assetB = assetFactory();
+        assetC = assetFactory();
+        assetD = assetFactory();
 
-        assetA.name = "Asset A";
-        assetB.name = "Asset B";
+        assetA.name = "Game";
+        assetB.name = "Another Game";
+        assetC.name = "Software";
+        assetD.name = "Book";
 
-        assetA.price = 10;
-        assetB.price = 25;
+        assetA.price = 100000000000000000;
+        assetB.price = 2500000000000000000;
+        assetC.price = 5000000000000000000;
+        assetD.price = 1500000000000000000;
 
-        siteA.assets = [assetA, assetB];
-        siteB.assets = [structuredClone(assetA), structuredClone(assetB)];
+        siteA.assets = [assetA, assetB, assetC, assetD];
+        siteB.assets = [structuredClone(assetA), structuredClone(assetB), structuredClone(assetC), structuredClone(assetD)];
 
         // initialize sites
         sites = [siteA, siteB]
